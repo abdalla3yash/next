@@ -22,9 +22,10 @@ class NextApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primaryColor: Colors.amber,
-      accentColor: Colors.amber,
-        ),
+      theme: ThemeData(
+        primaryColor: Colors.amber,
+        accentColor: Colors.amber,
+      ),
       home: this.home,
     );
   }
