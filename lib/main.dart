@@ -23,8 +23,8 @@ class NextApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Colors.amber,
-        accentColor: Colors.amber,
+        primaryColor: Color(0xFFF4325C),
+        accentColor: Color(0xFFFB8C66),
       ),
       home: this.home,
     );

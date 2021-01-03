@@ -41,37 +41,50 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: _isLoading
-            ? Text("Home")
-            : (_hasError ? _error(context, _errorMessage) : Text(_name)),
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-          child: ListView(
-        children: <Widget>[
-          DrawerHeader(child: null),
-          ListTile(
-            title: Text('Log Out'),
-            trailing: Icon(Icons.exit_to_app),
-            onTap: () async {
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          elevation: 0.0,
+          title: _isLoading
+              ? Text("Home")
+              : (_hasError
+                  ? _error(context, _errorMessage)
+                  : Text(
+                      _name,
+                      style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    )),
+          centerTitle: true,
+          leading: IconButton(
+            icon: Icon(
+              Icons.exit_to_app,
+              color: Colors.white,
+            ),
+            onPressed: () async {
               FirebaseAuth.instance.signOut().then((_) {
-                Navigator.of(context).pop();
                 Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (context) => LoginScreen()));
               });
             },
           ),
-        ],
-      )),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _newTodo,
-        child: Icon(Icons.add),
-      ),
-      body: _isLoading
-          ? _loading(context)
-          : (_hasError ? _error(context, _errorMessage) : _content(context)),
-    );
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _newTodo,
+          child: Icon(Icons.add),
+        ),
+        body: Container(
+            child: Stack(
+          children: <Widget>[
+            //stack overlaps widgets
+
+            _isLoading
+                ? _loading(context)
+                : (_hasError
+                    ? _error(context, _errorMessage)
+                    : _content(context)),
+          ],
+        )));
   }
 
   void _newTodo() {
