@@ -16,6 +16,7 @@ void main() async {
 
 class NextApp extends StatelessWidget {
   final Widget home;
+  static const String google_sans_family = "GoogleSans";
 
   const NextApp(this.home);
   @override
@@ -23,8 +24,11 @@ class NextApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Color(0xFFF4325C),
-        accentColor: Color(0xFFFB8C66),
+        fontFamily: google_sans_family,
+        primaryColor:  Color(0xFFF4325C),
+        disabledColor: Colors.grey,
+        cardColor: Colors.white,
+        canvasColor: Colors.grey[50],
       ),
       home: this.home,
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-Widget textFormField(String title,
-    TextEditingController controller, bool obscure) {
+Widget textFormField(
+    String title, TextEditingController controller, bool obscure) {
   return TextFormField(
     decoration: InputDecoration(
       labelText: title,
@@ -13,5 +13,11 @@ Widget textFormField(String title,
     ),
     obscureText: obscure,
     controller: controller,
+    validator: (value) {
+      if (value.isEmpty) {
+        return '$title is required!!';
+      }
+      return null;
+    },
   );
 }

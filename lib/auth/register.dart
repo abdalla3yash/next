@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:next/auth/login.dart';
 import 'package:next/todo/home.dart';
 import 'package:next/widget/const.dart';
+import 'package:next/widget/textField.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -15,7 +16,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   TextEditingController _passwordController = TextEditingController();
   TextEditingController _confirmPasswordController = TextEditingController();
   TextEditingController _nameController = TextEditingController();
-
   var _key = GlobalKey<FormState>();
   bool _autovalidation = false;
   bool _isLoading = false;
@@ -73,64 +73,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       key: _key,
                       child: Column(
                         children: <Widget>[
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              contentPadding: const EdgeInsets.all(15.0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              hintText: 'Email',
-                            ),
-                            validator: (value) {
-                              if (value.isEmpty) {
-                                return 'Email is required!!';
-                              }
-                              return null;
-                            },
-                          ),
+                          textFormField('Email', _emailController, false),
                           SizedBox(
                             height: 10,
                           ),
-                          TextFormField(
-                            controller: _nameController,
-                            decoration: InputDecoration(
-                              labelText: 'Name',
-                              contentPadding: const EdgeInsets.all(15.0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              hintText: 'Name',
-                            ),
-                            validator: (value) {
-                              if (value.isEmpty) {
-                                return 'Name is required!!';
-                              }
-                              return null;
-                            },
-                          ),
+                          textFormField('Name', _nameController, false),
                           SizedBox(
                             height: 10,
                           ),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              contentPadding: const EdgeInsets.all(15.0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              hintText: 'Password',
-                            ),
-                            validator: (value) {
-                              if (value.isEmpty) {
-                                return 'Password is required!!';
-                              }
-                              return null;
-                            },
-                          ),
+                          textFormField('password', _passwordController, true),
                           SizedBox(
                             height: 10,
                           ),
@@ -148,6 +99,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             validator: (value) {
                               if (value.isEmpty) {
                                 return 'Confirmation is required!!';
+                              } else if (value != _passwordController.text) {
+                                return 'Passwords Not Match';
                               }
                               return null;
                             },
@@ -244,28 +197,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _autovalidation = false;
       });
 
-      FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-              email: _emailController.text, password: _passwordController.text)
-          .then((authResult) {
-        Firestore.instance.collection('profiles').document().setData({
-          'name': _nameController.text,
-          'user_id': authResult.user.uid
-        }).then((_) {
+      try {
+        AuthResult result = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+                email: (_emailController.text).trim(),
+                password: (_passwordController.text).trim());
+        FirebaseUser user = result.user;
+        await Firestore.instance
+            .collection('profiles')
+            .document()
+            .setData({'name': _nameController.text, 'user_id': user.uid});
+
+        if (user != null) {
           Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => HomeScreen()));
-        }).catchError((error) {
-          setState(() {
-            _isLoading = false;
-            _error = error.toString();
-          });
-        });
-      }).catchError((error) {
+        }
+      } catch (e) {
         setState(() {
           _isLoading = false;
-          _error = error.toString();
+          if (e.toString() ==
+              "PlatformException(ERROR_NETWORK_REQUEST_FAILED, A network error (such as timeout, interrupted connection or unreachable host) has occurred., null)") {
+            setState(() {
+              _error = 'Check Your Internet Connection.';
+            });
+          } else if (e.toString() ==
+              "PlatformException(ERROR_INVALID_EMAIL, The email address is badly formatted., null)") {
+            setState(() {
+              _error = 'Invalid email, Try again with valid email.';
+            });
+          } else {
+            setState(() {
+              _error = 'Something went wrong, Try again.';
+            });
+          }
         });
-      });
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:next/auth/register.dart';
@@ -15,10 +16,10 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController _passwordController = TextEditingController();
 
   var _key = GlobalKey<FormState>();
-
   bool _autovalidation = false;
   bool _isLoading = false;
   String _error;
+  String email, password;
   @override
   void dispose() {
     _emailController.dispose();
@@ -74,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           height: 15,
                         ),
-                        textFormField('Password', _passwordController, true),
+                        textFormField('password', _passwordController, true),
                         SizedBox(
                           height: 30,
                         ),
@@ -170,8 +171,8 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         FirebaseUser user =
             (await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: (_emailController.text).trim(),
+          password: (_passwordController.text).trim(),
         ))
                 .user;
         if (user != null) {
@@ -182,7 +183,33 @@ class _LoginScreenState extends State<LoginScreen> {
       } catch (e) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+
+          // _error = e.toString();
+          if (e.toString() ==
+              "PlatformException(ERROR_USER_NOT_FOUND, There is no user record corresponding to this identifier. The user may have been deleted., null)") {
+            setState(() {
+              _error = 'User not found, Please create account first.';
+            });
+          } else if (e.toString() ==
+              "PlatformException(ERROR_NETWORK_REQUEST_FAILED, A network error (such as timeout, interrupted connection or unreachable host) has occurred., null)") {
+            setState(() {
+              _error = 'Check Your Internet Connection.';
+            });
+          } else if (e.toString() ==
+              "PlatformException(ERROR_INVALID_EMAIL, The email address is badly formatted., null)") {
+            setState(() {
+              _error = 'Invalid email, Try again with valid email.';
+            });
+          } else if (e.toString() ==
+              "PlatformException(ERROR_WRONG_PASSWORD, The password is invalid or the user does not have a password., null)") {
+            setState(() {
+              _error = 'Wrong Password, Try again with right one.';
+            });
+          } else {
+            setState(() {
+              _error = 'Something went wrong, Try again.';
+            });
+          }
         });
       }
     }

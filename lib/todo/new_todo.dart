@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -27,9 +29,45 @@ class _NewTodoState extends State<NewTodo> {
         centerTitle: true,
         title: Text('New ToDo'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _savetodo,
-        child: Icon(Icons.save),
+      floatingActionButton: Builder(
+        builder: (context) => FloatingActionButton(
+            child: Icon(Icons.save),
+            backgroundColor: Theme.of(context).primaryColor,
+            onPressed: () async {
+              try {
+                final result = await InternetAddress.lookup('google.com');
+                if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+                  print('connected');
+                  if (!_key.currentState.validate()) {
+                    setState(() {
+                      _autovalidation = true;
+                    });
+                  } else {
+                    setState(() {
+                      _isLoading = true;
+                    });
+
+                    FirebaseAuth.instance.currentUser().then((user) {
+                      Firestore.instance
+                          .collection('todos')
+                          .document()
+                          .setData({
+                        'body': _todoController.text,
+                        'done': false,
+                        'user_id': user.uid
+                      }).then((_) {
+                        Navigator.of(context).pop();
+                      });
+                    });
+                  }
+                }
+              } on SocketException catch (_) {
+                print('not connected');
+                Scaffold.of(context).showSnackBar(SnackBar(
+                  content: Text("Check Your Internet Connection"),
+                ));
+              }
+            }),
       ),
       body: _isLoading ? _loading(context) : _form(context),
     );
@@ -65,27 +103,5 @@ class _NewTodoState extends State<NewTodo> {
     return Center(
       child: CircularProgressIndicator(),
     );
-  }
-
-  void _savetodo() async {
-    if (!_key.currentState.validate()) {
-      setState(() {
-        _autovalidation = true;
-      });
-    } else {
-      setState(() {
-        _isLoading = true;
-      });
-
-      FirebaseAuth.instance.currentUser().then((user) {
-        Firestore.instance.collection('todos').document().setData({
-          'body': _todoController.text,
-          'done': false,
-          'user_id': user.uid
-        }).then((_) {
-          Navigator.of(context).pop();
-        });
-      });
-    }
   }
 }

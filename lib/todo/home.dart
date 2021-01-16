@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,15 +11,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  FirebaseUser _user;
   bool _hasError = false;
   bool _isLoading = true;
   String _errorMessage;
   String _name;
+  Stream streams;
 
   @override
   void initState() {
     super.initState();
+    streams = Firestore.instance
+        .collection('todos')
+        .orderBy('done', descending: false)
+        .snapshots();
     FirebaseAuth.instance.currentUser().then((user) {
       Firestore.instance
           .collection('profiles')
@@ -27,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .then((snapShot) {
         setState(() {
           _name = snapShot.documents[0]['name'];
-          _user = user;
           _hasError = false;
           _isLoading = false;
         });
@@ -51,26 +55,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   : Text(
                       _name,
                       style: TextStyle(
-                          fontSize: 24,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+                        fontSize: 24,
+                        color: Colors.white,
+                      ),
                     )),
           centerTitle: true,
-          leading: IconButton(
-            icon: Icon(
-              Icons.exit_to_app,
-              color: Colors.white,
-            ),
-            onPressed: () async {
-              FirebaseAuth.instance.signOut().then((_) {
-                Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => LoginScreen()));
-              });
-            },
+          leading: Builder(
+            builder: (context) => IconButton(
+                icon: Icon(
+                  Icons.exit_to_app,
+                  color: Colors.white,
+                ),
+                onPressed: () async {
+                  try {
+                    final result = await InternetAddress.lookup('google.com');
+                    if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+                      print('connected');
+                      FirebaseAuth.instance.signOut().then((_) {
+                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                            builder: (context) => LoginScreen()));
+                      });
+                    }
+                  } on SocketException catch (_) {
+                    print('not connected');
+                    Scaffold.of(context).showSnackBar(SnackBar(
+                      content: Text("Check Your Internet Connection"),
+                    ));
+                  }
+                }),
           ),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _newTodo,
+          backgroundColor: Color(0xFFF4325C),
           child: Icon(Icons.add),
         ),
         body: Container(
@@ -96,11 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: EdgeInsets.all(24),
       child: StreamBuilder(
-          stream: Firestore.instance
-              .collection('todos')
-              .orderBy('done', descending: false)
-              .where('user_id', isEqualTo: _user.uid)
-              .snapshots(),
+          stream: streams,
+          // ignore: missing_return
           builder: (BuildContext context, AsyncSnapshot snapshot) {
             switch (snapshot.connectionState) {
               case ConnectionState.none:
@@ -116,8 +130,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (snapshot.hasError) {
                   return _error(context, snapshot.error.toString());
                 }
-                if (!snapshot.hasData) {
-                  return _error(context, 'no data');
+                if (snapshot.hasData) {
+                  if (snapshot.data.documents.length == 0) {
+                    return Center(
+                      child: Text(
+                        'NO DATA FOUND!!!',
+                        style:
+                            TextStyle(color: Theme.of(context).disabledColor),
+                      ),
+                    );
+                  }
                 }
                 return _drawScreen(context, snapshot.data);
                 break;
@@ -129,8 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _error(BuildContext context, String message) {
     return Center(
       child: Text(
-        'ERROR',
-        style: TextStyle(color: Colors.red),
+        message,
+        style: TextStyle(color: Theme.of(context).primaryColor),
       ),
     );
   }
@@ -166,11 +188,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icons.delete,
                   color: Colors.red.shade300,
                 ),
-                onPressed: () {
-                  Firestore.instance
-                      .collection('todos')
-                      .document(data.documents[position].documentID)
-                      .delete();
+                onPressed: () async {
+                  try {
+                    final result = await InternetAddress.lookup('google.com');
+                    if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+                      print('connected');
+                      Firestore.instance
+                          .collection('todos')
+                          .document(data.documents[position].documentID)
+                          .delete();
+                    }
+                  } on SocketException catch (_) {
+                    print('not connected');
+                    Scaffold.of(context).showSnackBar(SnackBar(
+                      content: Text("Check Your Internet Connection"),
+                    ));
+                  }
                 }),
           ),
         );
