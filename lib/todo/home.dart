@@ -11,19 +11,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  FirebaseUser _user;
   bool _hasError = false;
   bool _isLoading = true;
   String _errorMessage;
   String _name;
-  Stream streams;
 
   @override
   void initState() {
     super.initState();
-    streams = Firestore.instance
-        .collection('todos')
-        .orderBy('done', descending: false)
-        .snapshots();
     FirebaseAuth.instance.currentUser().then((user) {
       Firestore.instance
           .collection('profiles')
@@ -32,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .then((snapShot) {
         setState(() {
           _name = snapShot.documents[0]['name'];
+          _user = user;
           _hasError = false;
           _isLoading = false;
         });
@@ -113,7 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: EdgeInsets.all(24),
       child: StreamBuilder(
-          stream: streams,
+          stream: Firestore.instance
+              .collection('todos')
+              .orderBy('done', descending: false)
+              .where('user_id', isEqualTo: _user.uid)
+              .snapshots(),
           // ignore: missing_return
           builder: (BuildContext context, AsyncSnapshot snapshot) {
             switch (snapshot.connectionState) {
@@ -164,17 +165,24 @@ class _HomeScreenState extends State<HomeScreen> {
         return Card(
           child: ListTile(
             leading: IconButton(
-                icon: Icon(
-                  Icons.assignment_turned_in,
-                  color: data.documents[position]['done']
-                      ? Colors.teal
-                      : Colors.grey.shade400,
-                ),
+                icon: Icon(Icons.assignment_turned_in,
+                    color: (data.documents[position]['done'] == true)
+                        ? Colors.teal
+                        : (data.documents[position]['done'] == false)
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade400),
                 onPressed: () {
-                  Firestore.instance
-                      .collection('todos')
-                      .document(data.documents[position].documentID)
-                      .updateData({'done': true});
+                  if (data.documents[position]['done'] == false) {
+                    Firestore.instance
+                        .collection('todos')
+                        .document(data.documents[position].documentID)
+                        .updateData({'done': true});
+                  } else if (data.documents[position]['done'] == true) {
+                    Firestore.instance
+                        .collection('todos')
+                        .document(data.documents[position].documentID)
+                        .updateData({'done': false});
+                  }
                 }),
             title: Text(
               data.documents[position]['body'],

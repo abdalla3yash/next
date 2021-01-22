@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:next/auth/login.dart';
 import 'package:next/todo/home.dart';
 import 'package:next/widget/const.dart';
@@ -81,7 +82,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           SizedBox(
                             height: 10,
                           ),
-                          textFormField('password', _passwordController, true),
+                          TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              contentPadding: const EdgeInsets.all(15.0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                              hintText: 'Password',
+                            ),
+                            obscureText: true,
+                            controller: _passwordController,
+                            validator: (value) {
+                              if (value.isEmpty) {
+                                return 'Password is required!!';
+                              } else if (value.length < 6) {
+                                return ' Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
                           SizedBox(
                             height: 10,
                           ),
@@ -212,18 +232,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => HomeScreen()));
         }
-      } catch (e) {
+      } on PlatformException catch (e) {
         setState(() {
+          print(e);
           _isLoading = false;
-          if (e.toString() ==
-              "PlatformException(ERROR_NETWORK_REQUEST_FAILED, A network error (such as timeout, interrupted connection or unreachable host) has occurred., null)") {
+          if (e.code.toString() == "ERROR_NETWORK_REQUEST_FAILED") {
             setState(() {
               _error = 'Check Your Internet Connection.';
             });
-          } else if (e.toString() ==
-              "PlatformException(ERROR_INVALID_EMAIL, The email address is badly formatted., null)") {
+          } else if (e.code.toString() == "ERROR_INVALID_EMAIL") {
             setState(() {
               _error = 'Invalid email, Try again with valid email.';
+            });
+          } else if (e.code.toString() == "ERROR_EMAIL_ALREADY_IN_USE") {
+            setState(() {
+              _error = 'This Email Is Already Exist!!';
             });
           } else {
             setState(() {

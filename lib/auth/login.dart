@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:next/auth/register.dart';
 import 'package:next/todo/home.dart';
 import 'package:next/widget/const.dart';
 import 'package:next/widget/textField.dart';
+
+enum authProblems { UserNotFound, PasswordNotValid, NetworkError }
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -180,28 +184,26 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => HomeScreen()));
         }
-      } catch (e) {
+      } on PlatformException catch (e) {
+        print(e.code);
+
         setState(() {
           _isLoading = false;
 
           // _error = e.toString();
-          if (e.toString() ==
-              "PlatformException(ERROR_USER_NOT_FOUND, There is no user record corresponding to this identifier. The user may have been deleted., null)") {
+          if (e.code.toString() == "ERROR_USER_NOT_FOUND)") {
             setState(() {
               _error = 'User not found, Please create account first.';
             });
-          } else if (e.toString() ==
-              "PlatformException(ERROR_NETWORK_REQUEST_FAILED, A network error (such as timeout, interrupted connection or unreachable host) has occurred., null)") {
+          } else if (e.code.toString() == "ERROR_NETWORK_REQUEST_FAILED") {
             setState(() {
               _error = 'Check Your Internet Connection.';
             });
-          } else if (e.toString() ==
-              "PlatformException(ERROR_INVALID_EMAIL, The email address is badly formatted., null)") {
+          } else if (e.code.toString() == "ERROR_INVALID_EMAIL") {
             setState(() {
               _error = 'Invalid email, Try again with valid email.';
             });
-          } else if (e.toString() ==
-              "PlatformException(ERROR_WRONG_PASSWORD, The password is invalid or the user does not have a password., null)") {
+          } else if (e.code.toString() == "ERROR_WRONG_PASSWORD") {
             setState(() {
               _error = 'Wrong Password, Try again with right one.';
             });
